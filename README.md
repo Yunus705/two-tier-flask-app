@@ -3,128 +3,74 @@
 
 This is a simple Flask app that interacts with a MySQL database. The app allows users to submit messages, which are then stored in the database and displayed on the frontend.
 
+🔹Frontend/Logic Tier: Flask web application (Dockerized).
+🔹Backend Tier: MySQL database running in Kubernetes.
+🔹Orchestration: AWS EKS with eksctl.
+🔹Exposure: Application is exposed externally using a Kubernetes LoadBalancer Service.
+
 ## Prerequisites
 
 Before you begin, make sure you have the following installed:
 
 - Docker
 - Git (optional, for cloning the repository)
+- eksctl
+- kubectl
+- AWS CLI
 
-## Setup
+## Steps to Deploy
 
 1. Clone this repository (if you haven't already):
 
    ```bash
-   git clone https://github.com/your-username/your-repo-name.git
+   git clone https://github.com/Yunus705/two-tier-flask-app.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd your-repo-name
+   cd two-tier-flask-app
    ```
 
-3. Create a `.env` file in the project directory to store your MySQL environment variables:
+3. Build and Push Flask App Image:
 
    ```bash
-   touch .env
+   docker build -t <dockerhub-username>/flaskapp:latest .
+   docker push <dockerhub-username>/flaskapp:latest
    ```
 
-4. Open the `.env` file and add your MySQL configuration:
-
-   ```
-   MYSQL_HOST=mysql
-   MYSQL_USER=your_username
-   MYSQL_PASSWORD=your_password
-   MYSQL_DB=your_database
-   ```
-
-## Usage
-
-1. Start the containers using Docker Compose:
+4. Create EKS Cluster:
 
    ```bash
-   docker-compose up --build
+   eksctl create cluster --name three-tier-cluster --region us-west-2 --node-type t2.medium --nodes-min 2 --nodes-max 2
+   aws eks update-kubeconfig --region us-west-2 --name three-tier-cluster
+   kubectl get nodes
    ```
 
-2. Access the Flask app in your web browser:
+5. Apply Kubernetes Manifests:
 
-   - Frontend: http://localhost
-   - Backend: http://localhost:5000
+   ```bash
+   kubectl apply -f mysql-secrets.yml -f mysql-configmap.yml -f mysql-deployment.yml -f mysql-service.yml
+   kubectl apply -f two-tier-app-deployment.yml -f two-tier-app-service.yml
+   ```
 
-3. Create the `messages` table in your MySQL database:
+6. Verify Resources:
 
-   - Use a MySQL client or tool (e.g., phpMyAdmin) to execute the following SQL commands:
-   
-     ```sql
-     CREATE TABLE messages (
-         id INT AUTO_INCREMENT PRIMARY KEY,
-         message TEXT
-     );
-     ```
+   ```bash
+   kubectl get pods
+   kubectl get svc
+   ```
 
-4. Interact with the app:
-
-   - Visit http://localhost to see the frontend. You can submit new messages using the form.
-   - Visit http://localhost:5000/insert_sql to insert a message directly into the `messages` table via an SQL query.
-
-## Cleaning Up
-
-To stop and remove the Docker containers, press `Ctrl+C` in the terminal where the containers are running, or use the following command:
-
-```bash
-docker-compose down
-```
-
-## To run this two-tier application using  without docker-compose
-
-- First create a docker image from Dockerfile
-```bash
-docker build -t flaskapp .
-```
-
-- Now, make sure that you have created a network using following command
-```bash
-docker network create twotier
-```
-
-- Attach both the containers in the same network, so that they can communicate with each other
-
-i) MySQL container 
-```bash
-docker run -d \
-    --name mysql \
-    -v mysql-data:/var/lib/mysql \
-    --network=twotier \
-    -e MYSQL_DATABASE=mydb \
-    -e MYSQL_ROOT_PASSWORD=admin \
-    -p 3306:3306 \
-    mysql:5.7
+7. Access Application:
+   Copy the EXTERNAL-IP of two-tier-app-service (LoadBalancer).
+   Open in browser:
+   ```
+   http://<EXTERNAL-IP>/
+   ```
 
 ```
-ii) Backend container
-```bash
-docker run -d \
-    --name flaskapp \
-    --network=twotier \
-    -e MYSQL_HOST=mysql \
-    -e MYSQL_USER=root \
-    -e MYSQL_PASSWORD=admin \
-    -e MYSQL_DB=mydb \
-    -p 5000:5000 \
-    flaskapp:latest
-
-```
-
-## Notes
-
-- Make sure to replace placeholders (e.g., `your_username`, `your_password`, `your_database`) with your actual MySQL configuration.
-
-- This is a basic setup for demonstration purposes. In a production environment, you should follow best practices for security and performance.
-
-- Be cautious when executing SQL queries directly. Validate and sanitize user inputs to prevent vulnerabilities like SQL injection.
-
-- If you encounter issues, check Docker logs and error messages for troubleshooting.
-
-```
-
+🛠 Application Workflow
+1. User sends request to Flask app via LoadBalancer.
+2. Flask App processes request and connects to MySQL Service.
+3. MySQL Pod stores and retrieves messages.
+ ```

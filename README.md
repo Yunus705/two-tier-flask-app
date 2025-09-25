@@ -3,10 +3,10 @@
 
 This is a simple Flask app that interacts with a MySQL database. The app allows users to submit messages, which are then stored in the database and displayed on the frontend.
 
-🔹Frontend/Logic Tier: Flask web application (Dockerized).
-🔹Backend Tier: MySQL database running in Kubernetes.
-🔹Orchestration: AWS EKS with eksctl.
-🔹Exposure: Application is exposed externally using a Kubernetes LoadBalancer Service.
+- Frontend/Logic Tier: Flask web application (Dockerized).
+- Backend Tier: MySQL database running in Kubernetes.
+- Orchestration: AWS EKS with eksctl.
+- Exposure: Application is exposed externally using a Kubernetes LoadBalancer Service.
 
 ## Prerequisites
 
@@ -68,9 +68,8 @@ Before you begin, make sure you have the following installed:
    http://<EXTERNAL-IP>/
    ```
 
-```
-🛠 Application Workflow
+## 🛠 Application Workflow
+
 1. User sends request to Flask app via LoadBalancer.
 2. Flask App processes request and connects to MySQL Service.
 3. MySQL Pod stores and retrieves messages.
- ```
